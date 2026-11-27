@@ -22,4 +22,20 @@ Eleven wearable night-vision devices, from analog and digital PVS-69 monoculars 
 
 *Eyepiece glow in third person. The comparison uses the same brightness adjustment for all six crops.*
 
+## At night
+
+All eleven devices in the same Cordon alley at 22:00 in Romeo.
+
+| Sensor | Monocular | Binocular |
+| --- | --- | --- |
+| Gen 1 | ![Gen 1 monocular at night](media/night/01-mono-gen1.png) | ![Gen 1 binoculars at night](media/night/06-bino-gen1.png) |
+| Gen 2 | ![Gen 2 monocular at night](media/night/02-mono-gen2.png) | ![Gen 2 binoculars at night](media/night/07-bino-gen2.png) |
+| Gen 3 | ![Gen 3 monocular at night](media/night/03-mono-gen3.png) | ![Gen 3 binoculars at night](media/night/08-bino-gen3.png) |
+| Digital monochrome | ![Digital monochrome monocular at night](media/night/04-mono-digital-mono.png) | ![Digital monochrome binoculars at night](media/night/09-bino-digital-mono.png) |
+| Digital color | ![Digital color monocular at night](media/night/05-mono-digital-color.png) | ![Digital color binoculars at night](media/night/10-bino-digital-color.png) |
+
+### Gen 3 quad
+
+![GPNVG-18 Gen 3 quad at night](media/night/11-quad-gen3.png)
+
 This is a fan-made S.T.A.L.K.E.R. mod. [GSC Game World fan content guidelines](https://www.gsc-game.com/guidelines/)
