@@ -1,0 +1,12 @@
+Romeo analog quad housing and optical assembly
+
+Original model by FaboElChapo
+Modern NVG/GPNVG18 Dummy [Weight Optimized/somewhat rugged]
+https://www.printables.com/model/1097091-modern-nvggpnvg18-dummy-weight-optimizedsomewhat-r/files
+
+Original model and adapted quad housing and optics licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0).
+https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+The adaptation reorients and assembles the original bridge and both solid housings, moves the paired housings inward, adds four fitted optical surfaces and assigns opaque black materials to the original interior wells, assigns game materials, and rigs the assembly to Romeo's G24 receiver. The existing G24 mount, shaders, and textures retain their respective project terms.
+
+

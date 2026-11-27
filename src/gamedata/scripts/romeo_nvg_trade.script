@@ -1,0 +1,44 @@
+local config
+
+local function model_generation(item)
+    if not (item and config) then return end
+    local section = item:section()
+    if section:sub(1, 12) ~= "romeo_pvs69_" or not config:line_exist(section, "romeo_nvg_generation") then
+        return
+    end
+    return config:r_u32(section, "romeo_nvg_generation"), section
+end
+
+function block_purchase(item, profile)
+    if not profile or profile.mode ~= 2 or model_generation(item) ~= 2 then return false end
+    return (profile.romeo_supply_tier or 1) < 2
+end
+
+function block_checkout(menu)
+    local basket = menu.CC.npc_trade
+    if not basket then return false end
+    for id in pairs(basket.indx_id) do
+        if model_generation(level.object_by_id(id)) == 2 then
+            local npc = menu:GetPartner()
+            return not npc or (ui_inventory.supply_level(npc, true) or 1) < 2
+        end
+    end
+    return false
+end
+
+local function price(_kind, item, profile, _base_cost, quote)
+    if not profile or (profile.mode ~= 1 and profile.mode ~= 2) then return end
+    local generation, section = model_generation(item)
+    if not generation then return end
+    if generation == 3 then
+        quote.new_cost = 0
+        return
+    end
+    local cost = config:r_u32(section, "cost")
+    quote.new_cost = profile.mode == 1 and cost / 4 or cost
+end
+
+function on_game_start()
+    config = system_ini()
+    RegisterScriptCallback("on_get_item_cost", price)
+end

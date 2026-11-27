@@ -1,0 +1,109 @@
+local ATTACHMENT = "romeo_nvg_world"
+local HEAD_BONE = "bip01_head"
+local MESH_DIRECTORY = "dynamics\\romeo_nvg\\"
+
+-- Head-bone coordinates in metres. The X-Ray head bone's local X is up.
+local battle = { .1567, .0003, .2008, eyes = {0, .102, .030, .102, -.030} }
+local tactical = { .1519, .0004, .2034, eyes = {1, .096, .032, .097, -.031} }
+local m40 = { .1454, .0076, .1947, quad_relief = .003, eyes = {2, .091, .038, .090, -.023} }
+local by_visual = {
+    stalker_soldier_2_helm_battle = battle,
+    stalker_soldier_2_helm_tactic = tactical,
+    stalker_nebo_1_backpack_helm_m40 = m40,
+    stalker_soldier_3 = { .155, 0, .211 },
+    stalker_nebo_1 = { .1634, -.0044, .191, eyes = {3, .108, .029, .109, -.038} },
+}
+
+-- Preserve the phosphor families at small screen sizes after exposure and bloom.
+local phosphor = {
+    {.045, .83, .022}, {.105, .86, .39}, {.23, .52, .91}, {.72, .72, .72},
+    {.51, .31, .84}, -- cobalt/lavender colour sensor
+}
+local glow_lane, left_lane, right_lane, up_lane, side_lane, forward_lane
+
+function on_game_start()
+    if shader_bus and shader_bus.version() >= 7 then
+        glow_lane = shader_bus.register("romeo_eye_glow", "Romeo eye glow", "Face illumination RGB and eyepiece layout")
+        left_lane = shader_bus.register("romeo_eye_left", "Romeo eye glow", "Left eye plane and skin profile")
+        right_lane = shader_bus.register("romeo_eye_right", "Romeo eye glow", "Right eye plane")
+        up_lane = shader_bus.register("romeo_face_up", "Romeo eye glow", "Face up axis")
+        side_lane = shader_bus.register("romeo_face_side", "Romeo eye glow", "Face side axis")
+        forward_lane = shader_bus.register("romeo_face_forward", "Romeo eye glow", "Face forward axis")
+    end
+end
+
+local function set_axis(lane, axis)
+    shader_bus.set(lane, axis.x, axis.y, axis.z, 0)
+end
+
+local function update_glow(view, powered)
+    local color = phosphor[view.generation]
+    local eyes = powered and view.fit.eyes
+    local head = eyes and color and glow_lane and forward_lane and view.actor:bone_transform(view.bone, false)
+    if not head then
+        if view.glowing then shader_bus.set(glow_lane, 0, 0, 0, 0) end
+        view.glowing = false
+        return
+    end
+    local mode = view.variant:find("_mono$") and 2 or view.variant == "analog_quad" and 3 or 1
+    local left = vector():set(eyes[2], eyes[3], 0)
+    local right = vector():set(eyes[4], eyes[5], 0)
+    head:transform_tiny(left)
+    head:transform_tiny(right)
+    shader_bus.set(left_lane, left.x, left.y, left.z, eyes[1])
+    set_axis(right_lane, right)
+    set_axis(up_lane, head.i)
+    set_axis(side_lane, head.j)
+    set_axis(forward_lane, head.k)
+    if not view.glowing then shader_bus.set(glow_lane, color[1], color[2], color[3], mode) end
+    view.glowing = true
+end
+
+function start(actor, variant, generation)
+    if not script_attachment_type or not script_attachment_type.World then return end
+    local path = MESH_DIRECTORY .. variant .. "_world"
+    if not getFS():exist("$game_meshes$", path .. ".ogf") then return end
+    local bone = actor:get_bone_id(HEAD_BONE, false)
+    if not bone or bone >= 65535 then return end
+    local model = actor:add_attachment(ATTACHMENT, path)
+    if not model then return end
+    model:set_type(script_attachment_type.World)
+    model:set_parent_bone(bone)
+    -- Script attachments take degrees. This bank aligns device up with head up.
+    model:set_rotation(0, 0, 90)
+    model:set_bone_visible(0, false, true)
+    return { actor = actor, model = model, variant = variant, generation = generation, visible = false }
+end
+
+function update(view, exterior, powered)
+    if not view then return end
+    local actor, model = view.actor, view.model
+    local visual = actor:get_visual_name() or ""
+    if visual ~= view.visual then
+        view.visual = visual
+        local bone = actor:get_bone_id(HEAD_BONE, false)
+        local visual_key = visual:lower():gsub("%.ogf$", ""):match("[^/\\]+$")
+        view.fit = bone and bone < 65535 and by_visual[visual_key] or nil
+        local fit = view.fit
+        if fit then
+            local relief = view.variant == "analog_quad" and (fit.quad_relief or 0) or 0
+            model:set_parent_bone(bone)
+            model:set_position(fit[1], fit[2], fit[3] + relief)
+            view.bone = bone
+        end
+    end
+    local visible = exterior and view.fit ~= nil
+    if visible ~= view.visible then
+        model:set_bone_visible(0, visible, true)
+        view.visible = visible
+    end
+    update_glow(view, visible and powered)
+end
+
+function stop(view)
+    if not view then return end
+    update_glow(view, false)
+    if db.actor == view.actor then
+        view.actor:remove_attachment(ATTACHMENT)
+    end
+end

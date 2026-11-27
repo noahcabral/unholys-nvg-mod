@@ -1,0 +1,20 @@
+#include "common.h"
+
+TextureCube<float4> s_env0;
+TextureCube<float4> s_env1;
+
+float4 main(float3 eyeToSurface : TEXCOORD2, float3 worldNormal : TEXCOORD3, float fog : FOG) : SV_Target
+{
+    float3 direction = normalize(eyeToSurface);
+    float3 normal = normalize(worldNormal);
+    float3 ray = reflect(direction, normal);
+    float3 sky = lerp(s_env0.SampleLevel(smp_rtlinear, ray, 0).rgb,
+        s_env1.SampleLevel(smp_rtlinear, ray, 0).rgb, saturate(L_ambient.w));
+    float grazing = 1.0 - saturate(dot(-direction, normal));
+    float fresnel = 0.09 + 0.45 * grazing * grazing * grazing;
+    float3 coating = float3(0.38, 0.55, 0.82);
+    float3 body = float3(0.018, 0.024, 0.033) * (L_ambient.rgb + L_hemi_color.rgb);
+    float specular = pow(saturate(dot(ray, -normalize(L_sun_dir_w.xyz))), 78.0);
+    float3 color = body + sky * coating * fresnel + L_sun_color.rgb * coating * specular * 0.25;
+    return float4(lerp(fog_color.rgb, color, saturate(fog)), 1.0);
+}

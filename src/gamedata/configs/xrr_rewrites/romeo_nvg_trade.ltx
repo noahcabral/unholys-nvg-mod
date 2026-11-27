@@ -1,0 +1,10 @@
+; Reuse the tier shown in Romeo's trade window and recheck it at checkout.
+[ui_inventory]
+from_1 = "mode            = 2,"
+to_1 = "mode            = 2, romeo_supply_tier = supply_level(npc, true) or 1,"
+from_2 = "function UIInventory:TMode_Buy()"
+to_2 = "function UIInventory:TMode_Buy() if romeo_nvg_trade.block_checkout(self) then return end"
+
+[utils_item]
+from_1 = "function get_item_trade_status(obj, profile)"
+to_1 = "function get_item_trade_status(obj, profile) if romeo_nvg_trade.block_purchase(obj, profile) then return 3 end"

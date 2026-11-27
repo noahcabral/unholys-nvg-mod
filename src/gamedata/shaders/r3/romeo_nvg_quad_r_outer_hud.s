@@ -1,0 +1,13 @@
+function normal(shader, t_base, t_second, t_detail)
+    shader:begin("romeo_nvg_quad_hud", "romeo_nvg_quad_r_outer")
+        : sorting(2, true)
+        : blend(true, blend.srcalpha, blend.invsrcalpha)
+        : aref(false, 0)
+        : zb(true, true)
+        : fog(false)
+    shader:dx10texture("s_romeo_lens_scene", "$user$generic_temp")
+    shader:dx10texture("s_romeo_lens_position", "$user$position")
+    shader:dx10texture("s_romeo_lens_albedo", "$user$albedo")
+    shader:dx10texture("s_romeo_lens_blur", "$user$blur_2")
+    shader:dx10sampler("smp_rtlinear")
+end

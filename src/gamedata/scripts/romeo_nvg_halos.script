@@ -1,0 +1,105 @@
+local range = 48
+local period = 120
+local lanes, sent, next_scan = {}, {}, 0
+local camera, candidates
+
+local function add(position, radius)
+    local from_camera = vector():set(position):sub(camera.cam_pos)
+    local distance = from_camera:dotproduct(from_camera)
+    if distance < 0.01 or distance > range * range
+        or from_camera:dotproduct(camera.cam_dir) < math.sqrt(distance) * 0.38 then return end
+    candidates[#candidates + 1] = {position = position, radius = radius, distance = distance}
+end
+
+local function bone_position(object, name)
+    local id = object:get_bone_id(name, false)
+    if id and id < 65535 then return object:bone_position(name, false) end
+    return object:position()
+end
+
+local function scan_object(object)
+    if not object then return false end
+    if object:clsid() == clsid.hanging_lamp then
+        local light = object:get_hanging_lamp()
+        if light and light:is_on() then add(bone_position(object, "bone_light"), 0.22) end
+    elseif object:id() ~= db.actor:id() and IsStalker(object) and object:alive() then
+        local torch = object:item_in_slot(10)
+        if torch and torch:torch_enabled() then
+            local origin = vector():set(bone_position(object, "bip01_head"))
+            local direction = vector():set(object:direction())
+            origin:add(vector():set(direction):mul(0.10))
+            if vector():set(camera.cam_pos):sub(origin):dotproduct(direction) > 0 then
+                add(origin, 0.12)
+            end
+        end
+    end
+    return false
+end
+
+local function scan_weapon_light(actor)
+    if not (utlf_core and utlf_core.get_state and utlf_light_pose and utlf_light_pose.emitter_transform) then return end
+    local state = utlf_core.get_state()
+    local weapon = actor:active_item()
+    if not (state and state.light and state.light.enabled and state.attachment and state.desired_on
+        and not state.hud_item_light_suspended and weapon and weapon:id() == state.weapon_id) then return end
+    local pose = utlf_light_pose.emitter_transform(weapon, state)
+    if pose then
+        pose:hud_to_world()
+        if vector():set(camera.cam_pos):sub(pose.c):dotproduct(pose.k) > 0 then
+            add(pose.c, 0.10)
+        end
+    end
+end
+
+local function clear()
+    for i, lane in ipairs(lanes) do
+        if sent[i] then
+            shader_bus.set(lane, 0, 0, 0, 0)
+            sent[i] = nil
+        end
+    end
+    next_scan = 0
+end
+
+local function update()
+    local actor = db.actor
+    local enabled, generation = shader_bus.get("romeo_nvg")
+    if not actor or not actor:alive() or not enabled or generation <= 0 then return clear() end
+    local now = time_global()
+    if now < next_scan then return end
+    next_scan = now + period
+    camera, candidates = device(), {}
+    if bind_campfire and bind_campfire.campfires_all then
+        for _, binder in pairs(bind_campfire.campfires_all) do
+            if binder.object and binder.campfire and binder.campfire:is_on() then
+                local position = vector():set(binder.object:position())
+                position.y = position.y + 0.23
+                add(position, 0.32)
+            end
+        end
+    end
+    if level.iterate_nearest then level.iterate_nearest(camera.cam_pos, range, scan_object) end
+    scan_weapon_light(actor)
+    table.sort(candidates, function(a, b) return a.distance < b.distance end)
+    for i, lane in ipairs(lanes) do
+        local source = candidates[i]
+        if source then
+            local p = source.position
+            shader_bus.set(lane, p.x, p.y, p.z, source.radius)
+            sent[i] = true
+        elseif sent[i] then
+            shader_bus.set(lane, 0, 0, 0, 0)
+            sent[i] = nil
+        end
+    end
+end
+
+function on_game_start()
+    if not shader_bus or shader_bus.version() < 7 then return end
+    for i = 1, 4 do
+        lanes[i] = shader_bus.register("romeo_nvg_halo_" .. i, "Romeo PVS-69", "World light emitter")
+        if not lanes[i] then return end
+    end
+    RegisterScriptCallback("actor_on_update", update)
+    RegisterScriptCallback("load_state", clear)
+end

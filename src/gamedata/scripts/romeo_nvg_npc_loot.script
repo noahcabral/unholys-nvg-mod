@@ -1,0 +1,198 @@
+local CONFIG = "romeo_nvg_npc_loot.ltx"
+local SAVE_KEY = "romeo_nvg_npc_loot_rolled"
+local TOTAL_TENTHS = 1000
+local RANKS = {"rookie", "experienced", "professional", "veteran", "expert"}
+local CATEGORIES = {
+    "analog_mono_gen1", "analog_mono_gen2", "analog_mono_gen3", "digital_mono", "digital_mono_color",
+    "analog_bino_gen1", "analog_bino_gen2", "analog_bino_gen3", "digital_bino", "digital_bino_color",
+    "analog_quad_gen3", "no_nod",
+}
+
+local settings, loadouts, protected_nods, protected_items, protected_profiles, distributions
+local zml_roll_wrapper
+
+local function read_distributions()
+    local by_rank = {}
+    local totals = {}
+    for _, rank in ipairs(RANKS) do
+        by_rank[rank] = {}
+        totals[rank] = 0
+    end
+
+    for _, category in ipairs(CATEGORIES) do
+        local members, seen = {}, {}
+        local configured_members = category ~= "no_nod" and parse_list(settings, "members", category) or {}
+        for _, section in ipairs(configured_members) do
+            if ini_sys:section_exist(section) and not seen[section] then
+                seen[section] = true
+                protected_nods[section] = true
+                members[#members + 1] = section
+            end
+        end
+
+        local chances = parse_list(settings, "weights", category)
+        if #chances ~= #RANKS then
+            printf("! Romeo NOD loot: %s needs five rank percentages", category)
+            return
+        end
+        for column, rank in ipairs(RANKS) do
+            local percent = tonumber(chances[column])
+            local tenths = percent and math.floor(percent * 10 + 0.5)
+            if not tenths or percent < 0 or percent > 100 or math.abs(percent * 10 - tenths) > 1e-6 then
+                printf("! Romeo NOD loot: invalid %s percentage for %s", category, rank)
+                return
+            end
+            local lower = totals[rank]
+            totals[rank] = lower + tenths
+            if tenths > 0 then
+                local intervals = by_rank[rank]
+                intervals[#intervals + 1] = {lower = lower, upper = lower + tenths, members = members}
+            end
+        end
+    end
+    for _, rank in ipairs(RANKS) do
+        if totals[rank] ~= TOTAL_TENTHS then
+            printf("! Romeo NOD loot: %s percentages must total 100", rank)
+            return
+        end
+    end
+    return by_rank
+end
+
+local function choose_item(intervals)
+    local roll = math.random() * TOTAL_TENTHS
+    for _, interval in ipairs(intervals) do
+        if roll < interval.upper then
+            local count = #interval.members
+            if count == 0 then return end
+            -- The same draw selects the category and its uniformly sized member interval.
+            local fraction = (roll - interval.lower) / (interval.upper - interval.lower)
+            local index = math.min(count, math.floor(fraction * count) + 1)
+            return interval.members[index]
+        end
+    end
+end
+
+local function can_generate()
+    local is_host = rawget(_G, "XrrIsHost")
+    if is_host then return is_host() == true end
+    -- Native solo Anomaly has no xrRazom API. With incomplete co-op state, fail closed.
+    return rawget(_G, "XrrNet") == nil and rawget(_G, "XrrSessionActive") ~= true
+end
+
+local function has_story_id(obj, section)
+    return get_object_story_id(obj.id) or ini_sys:r_string_ex(section, "story_id")
+end
+
+local function ordinary_stalker(squad, npc)
+    if not squad or not npc or not IsStalker(nil, npc:clsid()) or not npc:alive() then return false end
+
+    local section = npc:section_name()
+    local squad_section = squad:section_name()
+    local profile = ini_sys:r_string_ex(section, "character_profile")
+    local custom_data = ini_sys:r_string_ex(section, "custom_data", "default_custom_data.ltx")
+    if not section:match("^sim_default_[a-z]+_%d+$") or profile ~= section
+        or custom_data ~= "default_custom_data.ltx" or protected_profiles[profile]
+        or not squad_section:match("^[a-z]+_sim_squad_") or not ini_sys:r_bool_ex(squad_section, "common", false)
+        or has_story_id(npc, section) or has_story_id(squad, squad_section)
+        or loadouts:line_exist("skip_npcs", section)
+        or loadouts:line_exist("loadouts_per_name", section)
+        or loadouts:line_exist("loadouts_per_squad", squad_section) then
+        return false
+    end
+
+    local spawn = npc:spawn_ini()
+    if spawn and (spawn:section_exist("story_object") or spawn:section_exist("spawn")
+        or spawn:section_exist("spawn_loadout") or spawn:section_exist("dont_keep_items")
+        or spawn:section_exist("dont_spawn_loot")) then
+        return false
+    end
+
+    if loadouts:section_exist("loadouts_per_visual") and loadouts:line_count("loadouts_per_visual") > 0 then
+        local visual = utils_stpk.get_stalker_data(npc).visual_name
+        if visual and loadouts:line_exist("loadouts_per_visual", visual) then return false end
+    end
+    return true
+end
+
+local function is_nod(section)
+    if protected_nods[section] or ini_sys:line_exist(section, "romeo_nvg_variant") then return true end
+    local effect = ini_sys:r_string_ex(section, "nv_effect")
+    return effect and effect ~= "" and effect ~= "none"
+end
+
+local function holds_protected_item(npc)
+    local death_settings = itms_manager.ini_death
+    for id in alife():get_children(npc) do
+        local item = alife_object(id)
+        if item then
+            local section = item:section_name()
+            if is_nod(section) or protected_items[section]
+                or has_story_id(item, section)
+                or ini_sys:r_bool_ex(section, "quest_item", false)
+                or ini_sys:r_bool_ex(section, "unique_item", false)
+                or (death_settings and death_settings:line_exist("keep_items", section)) then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+local function on_squad_member_created(squad, npc)
+    if not can_generate() or not ordinary_stalker(squad, npc) then return end
+    local rank = ranks.get_obj_rank_name(npc)
+    if not rank or rank == "" then return end
+    local intervals = distributions[settings:r_string_ex("rank_aliases", rank) or rank]
+    if not intervals then return end
+
+    local state = alife_storage_manager.get_se_obj_state(npc)
+    if (state and state[SAVE_KEY]) or holds_protected_item(npc) then return end
+
+    -- Save a decision even for the no-item outcome. The item uses normal ALife ownership.
+    state = state or alife_storage_manager.get_se_obj_state(npc, true)
+    if not state then return end
+    state[SAVE_KEY] = true
+    local section = choose_item(intervals)
+    if section then alife_create_item(section, npc) end
+end
+
+local function use_spawn_result_for_zml()
+    local zml = rawget(_G, "zml_loot")
+    local roll_item = zml and zml.roll_item_tiered
+    if not roll_item or roll_item == zml_roll_wrapper then return end
+
+    zml_roll_wrapper = function(pool, owner, is_one)
+        if pool and owner and IsStalker(nil, owner:clsid()) then
+            local npc = alife_object(owner:id())
+            local state = npc and alife_storage_manager.get_se_obj_state(npc)
+            if state and state[SAVE_KEY] then
+                for _, section in ipairs(pool) do
+                    if is_nod(section) then
+                        -- Keep the original slot probabilities. A NOD slot yields no additional item.
+                        local selected = pool[is_one and 1 or math.random(#pool)]
+                        if is_nod(selected) then return end
+                        return roll_item({selected}, owner, true)
+                    end
+                end
+            end
+        end
+        return roll_item(pool, owner, is_one)
+    end
+    zml.roll_item_tiered = zml_roll_wrapper
+end
+
+function on_game_start()
+    if not RegisterScriptCallbackPost then return end
+    settings = ini_file(CONFIG)
+    loadouts = ini_file("items\\settings\\npc_loadouts\\npc_loadouts.ltx")
+    protected_nods = parse_list(settings, "protected", "nods", true)
+    protected_items = parse_list(settings, "protected", "fixed_items", true)
+    protected_profiles = parse_list(settings, "protected", "profiles", true)
+    distributions = read_distributions()
+    if not distributions then return end
+
+    -- add_squad_member calls this after spawn supplies, the stock loadout and squad registration.
+    RegisterScriptCallbackPost("squad_on_add_npc", on_squad_member_created)
+    use_spawn_result_for_zml()
+end
