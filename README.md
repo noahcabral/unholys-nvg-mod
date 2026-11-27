@@ -6,13 +6,13 @@ Eleven wearable night-vision devices, from analog and digital PVS-69 monoculars 
 
 *Gen 3 binoculars and a right-tube reflex sight in Romeo.*
 
-![GPNVG-18 Gen 3 quad in daylight and at night in Romeo](media/quad-day-night.jpg)
+![GPNVG-18 Gen 3 quad with a narrow center bezel in Romeo](media/quad-in-game.png)
 
-*GPNVG-18 in daylight and at night.*
+*GPNVG-18 with the narrow center bezel.*
 
-![Digital binoculars in daylight in Romeo](media/digital-daylight.jpg)
+![Digital binoculars with the larger monochrome displays in Romeo](media/digital-in-game.png)
 
-*Digital monochrome binoculars in daylight.*
+*Digital binoculars with the larger 4:3 displays.*
 
 ![Third-person helmet fits for binoculars, monoculars and quads in Romeo](media/helmet-fit.jpg)
 
