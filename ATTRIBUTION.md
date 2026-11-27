@@ -6,7 +6,7 @@ The quad housing adapts **Modern NVG/GPNVG18 Dummy [Weight Optimized/somewhat ru
 
 ## Other model inputs
 
-The supplied ALPHA and Mono 3MF files had a title entry with no distribution terms. The supplied G24 STEP archive and separate objective-lens input also need explicit public redistribution provenance. Those inputs are incorporated into the exported in-game geometry, including the G24 on the quad. The local builder keeps that compiled geometry and its texture set in a separate input.
+The in-game ALPHA and Mono housings adapt the Vonscherf PVS-69 designs from the supplied `ALPHA FDM v82.3mf` and `Mono v8.3mf`. The supplied `wilcox-g24-1.snapshot.1.zip` provides the G24 mount geometry. The supplied `improved_OBJ_lens_8mm_m16.stl` provides the objective-lens geometry. The mod's owner confirmed noncommercial redistribution terms for these inputs. The bundled game meshes and textures are offered for nonprofit, noncommercial use. Retain these credits when redistributing the model assets. The GPNVG-18 adaptation also retains its CC BY-NC-SA 4.0 terms. [PVS-69 project](https://github.com/knack-tactical/PVS-69)
 
 ## Engine, shaders and screenshots
 
