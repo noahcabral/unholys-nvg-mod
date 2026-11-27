@@ -11,13 +11,13 @@ Eleven wearable night-vision devices for S.T.A.L.K.E.R. in one add-on. It includ
 - Analog Gen 1, Gen 2 and Gen 3 have a 40° view and independent gain per tube. Gen 3 binoculars add thermal outlines on the right tube. The quad adds outlines on its two center tubes.
 - Digital monochrome and color use a 48° view, 800×600 sampling, 4:3 displays and camera-motion blur. The color profile shifts from violet in brighter light to blue as light falls.
 - Binoculars fold out of the way. Monoculars use their flip-up mount. Equipped models appear in local third person and tint the skin around the eyes on supported faces.
-- Reflex sights align to the right tube. Analog near-focus blur fades out within roughly three feet. NPC equipment rolls use configurable ranks. Trader stock unlocks Gen 1 and digital at tier 1 and Gen 2 at tier 2. Gen 3 remains loot-only.
+- Reflex sights align to the right tube. Analog near-focus blur fades out within roughly three feet. NPC equipment rolls use configurable ranks. Trader stock unlocks Gen 1 and digital at tier 1 and Gen 2 at tier 2. Gen 3 stays outside trading.
 
 ## Compatibility
 
 | Game | Status | Requirements |
 | --- | --- | --- |
-| Romeo | Captured in game | The November 9 Romeo profile with xrRazom DX11, Shader Bus 7, Screen Space Shaders and the matching 3D Shader Scopes and PiP shader stack. |
+| Romeo | Captured in game | The ROMEO - 2026-11-09-001 profile with xrRazom DX11, Shader Bus 7, Screen Space Shaders and the matching 3D Shader Scopes and PiP shader stack. |
 | GAMMA | Port pending | GAMMA’s 3DSS can supply the reflex shader donor. The full stack needs renderer, trade and loot validation. |
 | Standalone Anomaly | Port pending | A modern Monolith DX11 engine exposes underlying APIs. The full stack still needs a standalone renderer and gameplay validation. |
 
