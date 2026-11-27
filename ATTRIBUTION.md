@@ -10,4 +10,4 @@ The in-game ALPHA and Mono housings adapt the Vonscherf PVS-69 designs from the 
 
 ## Engine, shaders and screenshots
 
-The repo carries the authored Lua, item data, shader modules and donor patches. The Screen Space Shaders glass vertex shader by Ascii1457, the 3D Shader Scopes shader donors and the exact PiP postprocess donor files are taken from the player's installation during a local build. The screenshots are from the Romeo build of S.T.A.L.K.E.R. Anomaly. [Screen Space Shaders](https://www.moddb.com/mods/stalker-anomaly/addons/screen-space-shaders) · [GSC Game World fan content guidelines](https://www.gsc-game.com/guidelines/)
+The Romeo download includes the Screen Space Shaders glass vertex shader by Ascii1457, adapted 3D Shader Scopes shaders, and Romeo PiP postprocessing files. The screenshots are from the Romeo build of S.T.A.L.K.E.R. Anomaly. [Screen Space Shaders](https://www.moddb.com/mods/stalker-anomaly/addons/screen-space-shaders) · [GSC Game World fan content guidelines](https://www.gsc-game.com/guidelines/)
