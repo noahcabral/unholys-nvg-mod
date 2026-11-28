@@ -18,10 +18,6 @@ Eleven wearable night-vision devices, from analog and digital PVS-69 monoculars 
 
 *Third-person fits and stow poses.*
 
-![A comparison of eye-area glow colors for each sensor type in Romeo](media/eyepiece-glow.jpg)
-
-*Eyepiece glow in third person. The comparison uses the same brightness adjustment for all six crops.*
-
 ## At night
 
 All eleven devices in the same Cordon alley at 22:00 in Romeo.
